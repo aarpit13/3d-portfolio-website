@@ -223,35 +223,42 @@
 
 #loading-screen {
   position: fixed;
-
   inset: 0;
-
   z-index: 99999;
-
   overflow: hidden;
-
   background: var(--bg);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
   transition:
     opacity 0.6s ease,
     visibility 0.6s ease;
+}
 
-  &.hide {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
+#loading-screen video {
+  width: 200px;
+  height: auto;
+  object-fit: contain;
+}
+
+#loading-screen.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .loader-gif-bg {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 
-  inset: 0;
+  width: 600px;
+  height: auto;
 
-  width: 100%;
-  height: 100%;
-
-  object-fit: cover;
+  object-fit: contain;
 }
 
 
