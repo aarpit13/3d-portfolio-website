@@ -5,8 +5,15 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-import { projects } from './data/projects.js';
-import { renderWorkPanel } from './components/WorkPanel.js';
+const projects = [];
+
+fetch('https://media.arpitmagar.com.np/projects.json?t=' + Date.now())
+  .then((r) => (r.ok ? r.json() : Promise.reject()))
+  .catch(() => fallbackProjects)
+  .then((list) => {
+    projects.push(...list);
+    renderWorkPanel(workGrid, projects);
+  });import { renderWorkPanel } from './components/WorkPanel.js';
 import { createContactPanel } from './components/ContactPanel.js';
 
 import { contact } from './data/contact.js';

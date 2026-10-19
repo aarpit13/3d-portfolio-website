@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Portfolio admin</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #1e1d1b; color: #f2f0ec; }
+  .wrap { display: grid; grid-template-columns: 280px 1fr; gap: 24px; max-width: 1100px; margin: 0 auto; padding: 24px; }
+  h2 { font-size: 13px; letter-spacing: .15em; text-transform: uppercase; opacity: .6; margin: 0 0 12px; }
+  input, textarea, select, button { font: inherit; color: inherit; background: #2c2a27; border: 1px solid #4a4743; border-radius: 6px; padding: 8px 10px; }
+  input[type=text], textarea { width: 100%; margin-bottom: 10px; }
+  textarea { min-height: 70px; resize: vertical; }
+  button { cursor: pointer; } button:hover { background: #3a3733; }
+  .primary { background: #f2f0ec; color: #1e1d1b; border: 0; font-weight: 600; padding: 10px 18px; }
+  .primary:hover { background: #fff; }
+  .item { display: flex; gap: 6px; align-items: center; padding: 8px; background: #2c2a27; border-radius: 6px; margin-bottom: 8px; }
+  .item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item button { padding: 4px 8px; }
+  .sec, .blk { border: 1px solid #4a4743; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+  .blk { background: #262421; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .row input { flex: 1; margin: 0; }
+  .thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+  img, video { max-width: 200px; max-height: 120px; border-radius: 4px; display: block; margin: 6px 0; }
+  label { display: block; font-size: 13px; opacity: .8; margin: 8px 0 4px; }
+  #status { margin-left: 12px; opacity: .8; }
+  @media (max-width: 800px) { .wrap { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside>
+    <h2>Projects</h2>
+    <div id="list"></div>
+    <button id="new" class="primary">+ New project</button>
+  </aside>
+  <main>
+    <div id="editor"><p style="opacity:.6">Pick a project, or create a new one.</p></div>
+  </main>
+</div>
+
+<script>
+// ---- EDIT THIS: your deployed Worker URL ----
+const API = 'https://portfolio-admin-api.arpitmagar22.workers.dev';
+
+const $ = (s) => document.querySelector(s);
+const esc = (s = '') => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const slug = (s = '') => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+let token = sessionStorage.getItem('admin-token') || '';
+let projects = [], cur = null, draft = null;
+
+// ---------- API ----------
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, { ...opts, headers: { Authorization: 'Bearer ' + token, ...(opts.headers || {}) } });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+const saveList = () => api('/projects', { method: 'PUT', body: JSON.stringify(projects) });
+
+function upload(file, folder, onProgress) {
+  return new Promise((ok, fail) => {
+    const x = new XMLHttpRequest();
+    x.open('POST', `${API}/upload?folder=${encodeURIComponent(folder)}&name=${encodeURIComponent(file.name)}`);
+    x.setRequestHeader('Authorization', 'Bearer ' + token);
+    x.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    x.upload.onprogress = (e) => onProgress(Math.round((e.loaded / e.total) * 100));
+    x.onload = () => (x.status === 200 ? ok(JSON.parse(x.responseText).url) : fail(new Error(x.responseText)));
+    x.onerror = () => fail(new Error('Network error'));
+    x.send(file);
+  });
+}
+
+const status = (t) => { const s = $('#status'); if (s) s.textContent = t; };
+
+// ---------- Rendering ----------
+const preview = (url, kind) => !url ? '' : kind === 'video'
+  ? `<video src="${esc(url)}" controls muted></video>` : `<img src="${esc(url)}" alt="">`;
+
+function renderList() {
+  $('#list').innerHTML = projects.map((p, i) => `
+    <div class="item"><span>${i + 1}. ${esc(p.title)}</span>
+      <button data-act="edit" data-i="${i}">Edit</button>
+      <button data-act="up" data-i="${i}">↑</button>
+      <button data-act="down" data-i="${i}">↓</button>
+      <button data-act="del" data-i="${i}">✕</button></div>`).join('');
+}
+
+function blockForm(b, si, bi) {
+  const at = `data-s="${si}" data-b="${bi}"`;
+  let h = `<div class="blk"><div class="row"><b style="flex:1">${b.type}</b><button ${at} data-act="delblock">Remove</button></div>`;
+  if (b.type === 'text' || b.type === 'split') h += `<textarea ${at} data-k="text" placeholder="Write here…">${esc(b.text)}</textarea>`;
+  if (b.type === 'image' || b.type === 'split') h += `<input type="file" accept="image/*" ${at} data-up="src">${preview(b.src, 'image')}`;
+  if (b.type === 'video') h += `<input type="file" accept="video/*" ${at} data-up="src">${preview(b.src, 'video')}`;
+  if (b.type === 'split') h += `<label><input type="checkbox" ${at} data-k="reverse" ${b.reverse ? 'checked' : ''}> flip sides</label>`;
+  if (b.type === 'gallery') h += `<input type="file" multiple accept="image/*" ${at} data-up="images"><div class="thumbs">${(b.images || []).map((u) => preview(u, 'image')).join('')}</div>`;
+  return h + '</div>';
+}
+
+function renderEditor() {
+  if (!draft) { $('#editor').innerHTML = ''; return; }
+  const types = ['text', 'image', 'video', 'split', 'gallery'].map((t) => `<option>${t}</option>`).join('');
+  $('#editor').innerHTML = `
+    <h2>${cur === null ? 'New project' : 'Edit project'}</h2>
+    <label>Title</label><input type="text" data-k="title" value="${esc(draft.title)}">
+    <label>Time</label><input type="text" data-k="time" value="${esc(draft.time)}" placeholder="May 2026">
+    <label>Role (comma separated)</label><input type="text" data-k="role" value="${esc((draft.role || []).join(', '))}">
+    <label>Tools (comma separated)</label><input type="text" data-k="tools" value="${esc((draft.tools || []).join(', '))}">
+    <label>Main video</label><input type="file" accept="video/*" data-up="video">${preview(draft.video, 'video')}
+
+    <h2 style="margin-top:28px">Sections</h2>
+    ${(draft.sections || []).map((s, si) => `
+      <div class="sec">
+        <div class="row"><input type="text" data-s="${si}" data-k="label" value="${esc(s.label)}" placeholder="Section title">
+          <button data-s="${si}" data-act="delsection">Delete section</button></div>
+        ${s.blocks.map((b, bi) => blockForm(b, si, bi)).join('')}
+        <div class="row"><select id="add-${si}">${types}</select><button data-s="${si}" data-act="addblock">+ Add block</button></div>
+      </div>`).join('')}
+    <button data-act="addsection">+ Add section</button>
+
+    <p style="margin-top:28px"><button class="primary" data-act="publish">Publish</button><span id="status"></span></p>`;
+}
+
+// ---------- Helpers ----------
+// Find the object a form field belongs to (project, section or block).
+function target(el) {
+  const { s, b } = el.dataset;
+  if (b !== undefined) return draft.sections[s].blocks[b];
+  if (s !== undefined) return draft.sections[s];
+  return draft;
+}
+
+// ---------- Events ----------
+document.addEventListener('input', (e) => {
+  const t = e.target, k = t.dataset.k;
+  if (!k || !draft) return;
+  const v = t.type === 'checkbox' ? t.checked : t.value;
+  target(t)[k] = (k === 'role' || k === 'tools') ? v.split(',').map((x) => x.trim()).filter(Boolean) : v;
+});
+
+document.addEventListener('change', async (e) => {
+  const t = e.target;
+  if (!t.dataset.up || !t.files.length || !draft) return;
+  if (!draft.title) { alert('Type a title first (it names the folder).'); t.value = ''; return; }
+  try {
+    const urls = [];
+    for (const f of t.files) urls.push(await upload(f, slug(draft.title), (p) => status(`Uploading ${f.name}… ${p}%`)));
+    const obj = target(t);
+    if (t.dataset.up === 'images') obj.images = [...(obj.images || []), ...urls];
+    else obj[t.dataset.up] = urls[0];
+    renderEditor();
+    status('Uploaded ✓ (not published yet)');
+  } catch (err) { status('Upload failed: ' + err.message); }
+});
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const { act, i, s } = b.dataset;
+  const idx = Number(i);
+
+  try {
+    if (act === 'edit') { cur = idx; draft = structuredClone(projects[idx]); renderEditor(); }
+    if (act === 'up' && idx > 0) { [projects[idx - 1], projects[idx]] = [projects[idx], projects[idx - 1]]; await saveList(); renderList(); }
+    if (act === 'down' && idx < projects.length - 1) { [projects[idx + 1], projects[idx]] = [projects[idx], projects[idx + 1]]; await saveList(); renderList(); }
+    if (act === 'del' && confirm(`Delete "${projects[idx].title}"?`)) {
+      projects.splice(idx, 1); await saveList(); draft = null; cur = null; renderList(); renderEditor();
+    }
+    if (act === 'addsection') { draft.sections.push({ label: '', blocks: [] }); renderEditor(); }
+    if (act === 'delsection') { draft.sections.splice(s, 1); renderEditor(); }
+    if (act === 'addblock') {
+      const type = $(`#add-${s}`).value;
+      draft.sections[s].blocks.push(type === 'gallery' ? { type, images: [] } : { type });
+      renderEditor();
+    }
+    if (act === 'delblock') { draft.sections[s].blocks.splice(b.dataset.b, 1); renderEditor(); }
+    if (act === 'publish') {
+      if (!draft.title || !draft.video) { status('Title and main video are required.'); return; }
+      if (cur === null) { projects.push(draft); cur = projects.length - 1; } else projects[cur] = draft;
+      status('Publishing…');
+      await saveList();
+      renderList();
+      status('Published ✓ — live on the site');
+    }
+  } catch (err) { alert(err.message); }
+});
+
+$('#new').addEventListener('click', () => {
+  cur = null;
+  draft = { title: '', video: '', role: [], time: '', tools: [], sections: [] };
+  renderEditor();
+});
+
+// ---------- Start ----------
+(async function init() {
+  while (true) {
+    if (!token) token = prompt('Admin password') || '';
+    try {
+      projects = await api('/projects');
+      sessionStorage.setItem('admin-token', token);
+      break;
+    } catch (err) {
+      token = ''; sessionStorage.removeItem('admin-token');
+      if (!confirm('Could not log in (' + err.message + '). Try again?')) return;
+    }
+  }
+  renderList();
+})();
+</script>
+</body>
+</html>

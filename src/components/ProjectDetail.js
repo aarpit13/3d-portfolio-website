@@ -30,6 +30,7 @@ export function createProjectDetail(projects) {
   let index = 0;
 
   function render() {
+    const prev = projects[(index - 1 + projects.length) % projects.length];
     const p = projects[index];
     const next = projects[(index + 1) % projects.length];
     const pad = (n) => String(n).padStart(2, '0');
@@ -64,16 +65,26 @@ export function createProjectDetail(projects) {
           `).join('')}
         </div>
 
-        <button class="pd-next" type="button">
-          <span>UP NEXT</span>
-          <strong>${next.title}</strong>
-        </button>
+             <nav class="pd-nav">
+          <button class="pd-prev" type="button">
+            <span>← PREVIOUS</span>
+            <strong>${prev.title}</strong>
+          </button>
+
+
+          <button class="pd-next" type="button">
+            <span>UP NEXT →</span>
+            <strong>${next.title}</strong>
+          </button>
+        </nav>
       </div>
     `;
 
     panel.querySelector('.pd-back').addEventListener('click', close);
     panel.querySelector('.pd-next').addEventListener('click', () => open((index + 1) % projects.length));
     panel.querySelector('.pd-scroll').scrollTop = 0;
+        panel.querySelector('.pd-prev').addEventListener('click', () => open((index - 1 + projects.length) % projects.length));
+   
   }
 
   function open(i) {

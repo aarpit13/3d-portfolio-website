@@ -103,23 +103,48 @@
   img { width: 100%; display: block; }
 }
 
-.pd-next {
-  display: block;
+.pd-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
   width: min(960px, 100% - 48px);
   margin: 64px auto;
-  padding: 24px 0 0;
-  border: none;
+  padding-top: 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.pd-prev,
+.pd-next,
+.pd-home {
+  background: none;
+  border: none;
   color: inherit;
-  text-align: left;
   cursor: pointer;
-  span { display: block; font-size: 11px; letter-spacing: 0.2em; opacity: 0.6; }
-  strong { font-size: 28px; }
+  padding: 0;
   &:hover { opacity: 0.7; }
+}
+
+.pd-prev { text-align: left; }
+.pd-next { text-align: right; }
+
+.pd-prev,
+.pd-next {
+  span { display: block; font-size: 11px; letter-spacing: 0.2em; opacity: 0.6; }
+  strong { font-size: 24px; }
+}
+
+.pd-home {
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  padding: 6px 14px;
 }
 
 @media (max-width: 700px) {
   .pd-head { flex-direction: column; }
   .pd-split, .pd-gallery { grid-template-columns: 1fr; }
   .pd-split.reverse .pd-text { order: 0; }
+  .pd-nav { flex-wrap: wrap; }
 }

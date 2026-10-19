@@ -1,0 +1,11 @@
+name = "portfolio-admin-api"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "3d-website-videos"      # <- the R2 bucket behind media.arpitmagar.com.np
+
+[vars]
+PUBLIC_URL = "https://media.arpitmagar.com.np"
+ALLOWED_ORIGIN = "*"
