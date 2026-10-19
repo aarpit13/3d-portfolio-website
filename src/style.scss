@@ -235,6 +235,13 @@
   transition:
     opacity 0.6s ease,
     visibility 0.6s ease;
+    
+    @media (max-width: 700px) {
+  .loader-gif-bg {
+    width: 70vw;
+  }
+}
+
 }
 
 #loading-screen video {
@@ -255,7 +262,8 @@
   left: 50%;
   transform: translate(-50%, -50%);
 
-  width: 600px;
+  width: min(600px, 90vw);   // 600px on PC, never wider than the screen
+  max-height: 90vh;
   height: auto;
 
   object-fit: contain;
