@@ -97,12 +97,13 @@ function blockForm(b, si, bi) {
   if (b.type === 'video') h += `<input type="file" accept="video/*" ${at} data-up="src">${preview(b.src, 'video')}`;
   if (b.type === 'split') h += `<label><input type="checkbox" ${at} data-k="reverse" ${b.reverse ? 'checked' : ''}> flip sides</label>`;
   if (b.type === 'gallery') h += `<input type="file" multiple accept="image/*" ${at} data-up="images"><div class="thumbs">${(b.images || []).map((u) => preview(u, 'image')).join('')}</div>`;
+  if (b.type === 'youtube') h += `<input type="text" ${at} data-k="url" placeholder="Paste YouTube link" value="${esc(b.url)}">`;
   return h + '</div>';
 }
 
 function renderEditor() {
   if (!draft) { $('#editor').innerHTML = ''; return; }
-  const types = ['text', 'image', 'video', 'split', 'gallery'].map((t) => `<option>${t}</option>`).join('');
+  const types = ['text', 'image', 'video', 'youtube', 'split', 'gallery'].map((t) => `<option>${t}</option>`).join('');
   $('#editor').innerHTML = `
     <h2>${cur === null ? 'New project' : 'Edit project'}</h2>
     <label>Title</label><input type="text" data-k="title" value="${esc(draft.title)}">
@@ -110,6 +111,7 @@ function renderEditor() {
     <label>Role (comma separated)</label><input type="text" data-k="role" value="${esc((draft.role || []).join(', '))}">
     <label>Tools (comma separated)</label><input type="text" data-k="tools" value="${esc((draft.tools || []).join(', '))}">
     <label>Main video</label><input type="file" accept="video/*" data-up="video">${preview(draft.video, 'video')}
+    <label>YouTube link (optional)</label><input type="text" data-k="youtube" value="${esc(draft.youtube)}">
 
     <h2 style="margin-top:28px">Sections</h2>
     ${(draft.sections || []).map((s, si) => `
@@ -178,7 +180,7 @@ document.addEventListener('click', async (e) => {
     }
     if (act === 'delblock') { draft.sections[s].blocks.splice(b.dataset.b, 1); renderEditor(); }
     if (act === 'publish') {
-      if (!draft.title || !draft.video) { status('Title and main video are required.'); return; }
+      if (!draft.title || !(draft.video || draft.youtube)) { status('Title and a main video or YouTube link are required.'); return; }
       if (cur === null) { projects.push(draft); cur = projects.length - 1; } else projects[cur] = draft;
       status('Publishing…');
       await saveList();

@@ -6,6 +6,7 @@ export const projects = [
   {
     title: 'Video Edit 01',
     video: 'https://media.arpitmagar.com.np/ani1.mp4',
+    youtube: 'https://www.youtube.com/watch?v=XXXXXXXXXXX',
 
     // Top-right info on the page
     role: ['Creative Direction', 'Storyboard', 'Motion Design', 'Sound Design'],
@@ -55,6 +56,7 @@ export const projects = [
   {
     title: 'Video Edit 02',
     video: 'https://media.arpitmagar.com.np/ani2.mp4',
+    youtube: 'https://www.youtube.com/watch?v=XXXXXXXXXXX',
 
     role: ['Editing', 'Motion Design'],
     time: 'June 2026',

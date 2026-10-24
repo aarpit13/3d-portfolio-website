@@ -1,5 +1,15 @@
 import './ProjectDetail.scss';
 
+const ytId = (url = '') =>
+  (url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/) || [])[1];
+
+const ytEmbed = (url, hero = false) => `
+  <div class="pd-yt ${hero ? 'hero' : ''}">
+    <iframe src="https://www.youtube-nocookie.com/embed/${ytId(url)}"
+            title="YouTube video" loading="lazy" allowfullscreen
+            allow="accelerometer; encrypted-media; picture-in-picture; fullscreen"></iframe>
+  </div>`;
+
 const blockHtml = (b) => {
   switch (b.type) {
     case 'text':
@@ -42,7 +52,9 @@ export function createProjectDetail(projects) {
       </div>
 
       <div class="pd-scroll">
-        <video class="pd-hero" src="${p.video}" controls autoplay muted loop playsinline></video>
+                ${ytId(p.youtube)
+          ? `<div class="pd-hero-wrap">${ytEmbed(p.youtube, true)}</div>`
+          : `<video class="pd-hero" src="${p.video}" controls autoplay muted loop playsinline></video>`}
 
         <div class="pd-head">
           <div>
@@ -94,6 +106,7 @@ export function createProjectDetail(projects) {
   }
 
   function close() {
+    panel.querySelectorAll('iframe').forEach((f) => (f.src = ''));
     panel.classList.remove('show');
     panel.querySelectorAll('video').forEach((v) => v.pause());
   }
