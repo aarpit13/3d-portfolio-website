@@ -123,6 +123,11 @@ controls.enableDamping = true;
 controls.minDistance = 0.005;
 controls.maxDistance = 5;
 
+controls.minPolarAngle = 0;
+controls.maxPolarAngle = Math.PI / 2;
+controls.minAzimuthAngle = -Math.PI / 2;  // -90°
+controls.maxAzimuthAngle = Math.PI / 2;   // +90°
+
 controls.update();
 
 
@@ -756,6 +761,7 @@ controls.target.copy(INITIAL_VIEW.target);
 const startDistance = INITIAL_VIEW.position.distanceTo(INITIAL_VIEW.target);
 controls.minDistance = startDistance * 0.05;
 controls.maxDistance = startDistance * 3;
+
 
 controls.update();
 
